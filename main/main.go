@@ -1,9 +1,13 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"go.uber.org/zap"
 	"os"
+)
+
+const (
+	contentLengthLimit = 0x100000 // 1 MB
 )
 
 func main() {
@@ -20,6 +24,9 @@ func main() {
 		}
 	}()
 
+	// set up the client
+	client := pkg.NewGobotClient()
+
 	// handle the command line arguments
 	args := os.Args
 	if len(args) > 1 {
@@ -32,15 +39,18 @@ func main() {
 	}
 }
 
-func printUsage()  {
+func printUsage() {
 	fmt.Printf("Quick and dirty internet crawler command line options\n: url1 [url2 [url3 ...]]")
 }
 
 func handle(parentUrl string, urls []string) error {
 	for _, url := range urls {
 
+		// TODO
 	}
 	return nil
 }
 
-func url
+func content(url string) ([]byte, error) {
+
+}
