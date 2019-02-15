@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/akurilov/gobot/pkg"
 	"go.uber.org/zap"
 	"os"
 )
@@ -30,10 +31,7 @@ func main() {
 	// handle the command line arguments
 	args := os.Args
 	if len(args) > 1 {
-		err := handle("", args[1:])
-		if err != nil {
-			panic(err)
-		}
+		handleUrls(logger, client, "", args[1:])
 	} else {
 		printUsage()
 	}
@@ -43,14 +41,22 @@ func printUsage() {
 	fmt.Printf("Quick and dirty internet crawler command line options\n: url1 [url2 [url3 ...]]")
 }
 
-func handle(parentUrl string, urls []string) error {
+func handleUrls(logger *zap.Logger, client *pkg.GobotClient, parentUrl string, urls []string) {
+	exitChan := make(chan error, len(urls))
+	submitCount := 0
 	for _, url := range urls {
-
-		// TODO
+		go client.ContentText(url, contentLengthLimit, handleContent, exitChan)
+		submitCount++
 	}
-	return nil
+	for i := 0; i < submitCount; i++ {
+		err := <-exitChan
+		if err != nil {
+			logger.Error(err.Error())
+		}
+	}
+
 }
 
-func content(url string) ([]byte, error) {
+func handleContent(url string, txt string) error {
 
 }

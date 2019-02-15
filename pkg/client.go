@@ -25,26 +25,30 @@ func NewGobotClient() *GobotClient {
 	}
 }
 
-func (client *GobotClient) ContentText(url string, maxLength int) (string, error) {
+func (client *GobotClient) ContentText(
+	url string, maxLength int, contentHandler func(url string, txt string) error, exitChan chan<- error) {
 	resp, err := client.Get(url)
 	if err != nil {
-		return "", err
+		exitChan <- err
+		return
 	}
 	statusCode := resp.StatusCode
 	if statusCode < 200 || statusCode > 299 {
-		return "", errors.New("response status code " + strconv.Itoa(statusCode))
+		exitChan <- errors.New("response status code " + strconv.Itoa(statusCode))
+		return
 	}
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text") {
-		return "", errors.New("unsupported content type " + contentType)
+		exitChan <- errors.New("unsupported content type " + contentType)
+		return
 	}
 	contentLenRaw := resp.Header.Get("Content-Length")
 	if len(contentLenRaw) == 0 {
-		return "", errors.New("missing content length header")
+		exitChan <- errors.New("missing content length header")
 	}
 	contentLen, err := strconv.Atoi(contentLenRaw)
 	if err != nil {
-		return "", errors.New("failed to parse the content length header value " + contentLenRaw)
+		exitChan <- errors.New("failed to parse the content length header value " + contentLenRaw)
 	}
 	contentLen = MinInt(contentLen, maxLength)
 	content := make([]byte, 0, contentLen)
@@ -56,6 +60,9 @@ func (client *GobotClient) ContentText(url string, maxLength int) (string, error
 		}
 	}()
 	contentLen, err = io.ReadFull(contentReader, content)
-	txt := string(content[:contentLen])
-	return txt, err
+	if contentLen > 0 {
+		txt := string(content[:contentLen])
+		err = contentHandler(url, txt)
+	}
+	exitChan <- err
 }
