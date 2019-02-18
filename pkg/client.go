@@ -12,19 +12,21 @@ import (
 
 type GobotClient struct {
 	http.Client
+	contentLengthLimit int
 }
 
-func NewGobotClient() *GobotClient {
+func NewGobotClient(contentLengthLimit int) *GobotClient {
 	return &GobotClient{
 		http.Client{
 			Transport: &http.Transport{
 				IdleConnTimeout: 10 * time.Second,
 			},
 		},
+		contentLengthLimit,
 	}
 }
 
-func (client *GobotClient) ContentText(url string, maxLength int) (string, error) {
+func (client *GobotClient) ContentText(url string) (string, error) {
 	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
@@ -40,14 +42,14 @@ func (client *GobotClient) ContentText(url string, maxLength int) (string, error
 	contentLenRaw := resp.Header.Get("Content-Length")
 	var contentLen int
 	if len(contentLenRaw) == 0 {
-		contentLen = maxLength
+		contentLen = client.contentLengthLimit
 	} else {
 		contentLen, err = strconv.Atoi(contentLenRaw)
 		if err != nil {
 			return "", errors.New("failed to parse the content length header value " + contentLenRaw)
 		}
-		if maxLength < contentLen {
-			contentLen = maxLength
+		if client.contentLengthLimit < contentLen {
+			contentLen = client.contentLengthLimit
 		}
 	}
 	content := make([]byte, contentLen, contentLen)

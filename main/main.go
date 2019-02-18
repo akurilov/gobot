@@ -6,32 +6,30 @@ import (
 	"github.com/hashicorp/golang-lru"
 	"go.uber.org/zap"
 	"os"
-	"regexp"
-	"runtime"
-	"strings"
 	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
 	contentLengthLimit = 0x100000 // 1 MB
 	urlQueueSizeLimit  = 0x100000
 	txtQueueSizeLimit  = 0x100000
-	uniqueUrlCacheSize = 0x100000
+	fetchConcurrency   = 200
+	statsOutputPeriod  = 10
 )
 
 type Object struct {
 }
 
 var (
-	linkPattern     = regexp.MustCompile("href=\"(((http[s]?://)|(www\\.))[\\S^\"]{2,256})\"")
-	client          = pkg.NewGobotClient()
-	log             = initLogger()
-	urlQueue        = make(chan string, urlQueueSizeLimit)
-	txtQueue        = make(chan string, txtQueueSizeLimit)
-	syncGroup       = sync.WaitGroup{}
-	uniqueUrlsCache = initUniqueUrlCache(uniqueUrlCacheSize)
-	placeholder     = &Object{}
-	parallelism     = runtime.NumCPU()
+	client     = pkg.NewGobotClient(contentLengthLimit)
+	log        = initLogger()
+	fetchQueue = make(chan string, urlQueueSizeLimit)
+	parseQueue = make(chan string, txtQueueSizeLimit)
+	syncGroup  = sync.WaitGroup{}
+	fetchCount = uint64(0)
+	startTime  = time.Now()
 )
 
 func initLogger() *zap.Logger {
@@ -58,16 +56,22 @@ func main() {
 			panic(err)
 		}
 	}()
-	// handle the command line arguments
 	args := os.Args
 	if len(args) > 1 {
-		syncGroup.Add(2)
-		for i := 0; i < parallelism; i++ {
-			go fetching()
-			go parsing()
+		syncGroup.Add(1)
+		for i := 0; i < fetchConcurrency; i++ {
+			go func() {
+				pkg.FetchLoop(log, client, &fetchCount, fetchQueue, parseQueue)
+				syncGroup.Done()
+			}()
 		}
+		go func() {
+			pkg.ParseLoop(log, parseQueue, fetchQueue)
+			syncGroup.Done()
+		}()
+		go printingStats()
 		for _, arg := range args[1:] {
-			urlQueue <- arg
+			fetchQueue <- arg
 		}
 		syncGroup.Wait()
 	} else {
@@ -79,51 +83,18 @@ func printUsage() {
 	fmt.Println("Quick and dirty internet crawler command line options\n: url1 [url2 [url3 ...]]")
 }
 
-func fetching() {
+func printingStats() {
+	sugar := log.Sugar()
 	for {
-		url := <-urlQueue
-		log.Info("fetching: " + url)
-		txt, err := client.ContentText(url, contentLengthLimit)
-		if err == nil {
-			txtQueue <- txt
-		} else {
-			log.Warn(err.Error())
-		}
+		time.Sleep(statsOutputPeriod * time.Second)
+		sugar.Infof(
+			"URL queue length: %d, parse queue length: %d, fetch mean rate: %f", len(fetchQueue), len(parseQueue),
+			meanRate())
 	}
-	syncGroup.Done()
 }
 
-func parsing() {
-	for {
-		txt := <-txtQueue
-		linkMatches := linkPattern.FindAllStringSubmatch(txt, 0x100)
-		for _, linkMatch := range linkMatches {
-			if len(linkMatch) > 1 {
-				url := linkMatch[1]
-				if len(url) > 0 {
-					url = urlTrancate(url)
-					found, _ := uniqueUrlsCache.ContainsOrAdd(url, placeholder)
-					if found {
-						log.Debug("dropping non-unique url: " + url)
-					} else {
-						urlQueue <- url
-					}
-				}
-			}
-		}
-	}
-	syncGroup.Done()
-}
-
-func urlTrancate(url string) string {
-	result := url
-	anchorIdx := strings.Index(result, "#")
-	if anchorIdx > 0 {
-		result = result[:anchorIdx]
-	}
-	queryIdx := strings.Index(result, "?")
-	if queryIdx > 0 {
-		result = result[:queryIdx]
-	}
-	return result
+func meanRate() float64 {
+	c := atomic.LoadUint64(&fetchCount)
+	d := time.Since(startTime)
+	return float64(c) / d.Seconds()
 }
