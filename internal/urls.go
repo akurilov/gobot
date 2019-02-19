@@ -2,6 +2,7 @@ package internal
 
 import "strings"
 
+// truncate the achor and query parts from the given URL
 func UrlTrancate(url string) string {
 	result := url
 	anchorIdx := strings.Index(result, "#")

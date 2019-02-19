@@ -11,11 +11,13 @@ import (
 	"time"
 )
 
+// HTTP client with custom init params
 type GobotClient struct {
 	http.Client
 	contentLengthLimit int
 }
 
+// Create new HTTP client with the specified max content length being fetched
 func NewGobotClient(contentLengthLimit int) *GobotClient {
 	return &GobotClient{
 		http.Client{
@@ -28,6 +30,11 @@ func NewGobotClient(contentLengthLimit int) *GobotClient {
 	}
 }
 
+// Get the content text from the specified URL. Returns error if:
+// * failed to fetch
+// * response status is not 2xx
+// * response Content-Type header exists and not starts with "text" prefix
+// * response Content-Length header contains the value which couldn't be parsed as integer
 func (client *GobotClient) ContentText(url string) (string, error) {
 	resp, err := client.Get(url)
 	if err != nil {

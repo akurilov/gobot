@@ -19,9 +19,6 @@ const (
 	statsOutputPeriod   = 10
 )
 
-type Object struct {
-}
-
 var (
 	client     = internal.NewGobotClient(contentLengthLimit)
 	log        = initLogger()
