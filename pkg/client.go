@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -20,6 +21,7 @@ func NewGobotClient(contentLengthLimit int) *GobotClient {
 		http.Client{
 			Transport: &http.Transport{
 				IdleConnTimeout: 10 * time.Second,
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		},
 		contentLengthLimit,
