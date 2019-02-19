@@ -5,6 +5,7 @@ import (
 	"github.com/akurilov/gobot/pkg"
 	"go.uber.org/zap"
 	"os"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -66,6 +67,15 @@ func main() {
 		for _, arg := range args[1:] {
 			fetchQueue <- arg
 		}
+		f, err := os.Create("cpu.profiling")
+		if err != nil {
+			panic(err)
+		}
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			panic(err)
+		}
+		defer pprof.StopCPUProfile()
 		syncGroup.Wait()
 	} else {
 		printUsage()
