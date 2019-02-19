@@ -1,8 +1,8 @@
-package main
+package cmd
 
 import (
 	"fmt"
-	"github.com/akurilov/gobot/pkg"
+	"github.com/akurilov/gobot/internal"
 	"go.uber.org/zap"
 	"os"
 	"runtime/pprof"
@@ -23,7 +23,7 @@ type Object struct {
 }
 
 var (
-	client     = pkg.NewGobotClient(contentLengthLimit)
+	client     = internal.NewGobotClient(contentLengthLimit)
 	log        = initLogger()
 	fetchQueue = make(chan string, fetchQueueSizeLimit)
 	parseQueue = make(chan string, parseQueueSizeLimit)
@@ -55,12 +55,12 @@ func main() {
 		syncGroup.Add(1)
 		for i := 0; i < fetchConcurrency; i++ {
 			go func() {
-				pkg.FetchLoop(log, client, &fetchCount, fetchQueue, parseQueue)
+				internal.FetchLoop(log, client, &fetchCount, fetchQueue, parseQueue)
 				syncGroup.Done()
 			}()
 		}
 		go func() {
-			pkg.ParseLoop(log, parseQueue, fetchQueue)
+			internal.ParseLoop(log, parseQueue, fetchQueue)
 			syncGroup.Done()
 		}()
 		for _, arg := range args[1:] {
