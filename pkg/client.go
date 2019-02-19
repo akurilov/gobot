@@ -20,7 +20,7 @@ func NewGobotClient(contentLengthLimit int) *GobotClient {
 	return &GobotClient{
 		http.Client{
 			Transport: &http.Transport{
-				IdleConnTimeout: 10 * time.Second,
+				IdleConnTimeout: 1 * time.Second,
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		},

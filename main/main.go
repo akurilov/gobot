@@ -12,11 +12,11 @@ import (
 )
 
 const (
-	contentLengthLimit = 0x100000 // 1 MB
-	urlQueueSizeLimit  = 0x100000
-	txtQueueSizeLimit  = 0x100000
-	fetchConcurrency   = 100
-	statsOutputPeriod  = 10
+	contentLengthLimit  = 0x100000 // 1 MB
+	fetchQueueSizeLimit = 0x10000
+	parseQueueSizeLimit = 0x10000
+	fetchConcurrency    = 100
+	statsOutputPeriod   = 10
 )
 
 type Object struct {
@@ -25,8 +25,8 @@ type Object struct {
 var (
 	client     = pkg.NewGobotClient(contentLengthLimit)
 	log        = initLogger()
-	fetchQueue = make(chan string, urlQueueSizeLimit)
-	parseQueue = make(chan string, txtQueueSizeLimit)
+	fetchQueue = make(chan string, fetchQueueSizeLimit)
+	parseQueue = make(chan string, parseQueueSizeLimit)
 	syncGroup  = sync.WaitGroup{}
 	fetchCount = uint64(0)
 	startTime  = time.Now()

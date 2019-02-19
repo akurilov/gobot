@@ -18,7 +18,7 @@ type object struct {
 }
 
 const (
-	uniqueUrlCacheSize = 0x100000
+	uniqueUrlCacheSize = 0x100000 // ~ 1M
 )
 
 var (
