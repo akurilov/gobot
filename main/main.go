@@ -63,7 +63,6 @@ func main() {
 			pkg.ParseLoop(log, parseQueue, fetchQueue)
 			syncGroup.Done()
 		}()
-		go printingStats()
 		for _, arg := range args[1:] {
 			fetchQueue <- arg
 		}
@@ -76,6 +75,7 @@ func main() {
 			panic(err)
 		}
 		defer pprof.StopCPUProfile()
+		go printingStats(f)
 		syncGroup.Wait()
 	} else {
 		printUsage()
@@ -86,9 +86,10 @@ func printUsage() {
 	fmt.Println("Quick and dirty internet crawler command line options\n: url1 [url2 [url3 ...]]")
 }
 
-func printingStats() {
+func printingStats(w *os.File) {
 	sugar := log.Sugar()
 	for {
+		w.Sync()
 		time.Sleep(statsOutputPeriod * time.Second)
 		c := atomic.LoadUint64(&fetchCount)
 		d := time.Since(startTime)
