@@ -15,7 +15,7 @@ const (
 	contentLengthLimit = 0x100000 // 1 MB
 	urlQueueSizeLimit  = 0x100000
 	txtQueueSizeLimit  = 0x100000
-	fetchConcurrency   = 200
+	fetchConcurrency   = 100
 	statsOutputPeriod  = 10
 )
 
