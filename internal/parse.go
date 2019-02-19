@@ -35,7 +35,7 @@ func ParseLoop(log *zap.Logger, parseQueue <-chan string, fetchQueue chan<- stri
 			if len(linkMatch) > 1 {
 				url := linkMatch[1]
 				if len(url) > 0 {
-					url = UrlTrancate(url)
+					url = UrlTruncate(url)
 					found, _ := uniqueUrlsCache.ContainsOrAdd(url, placeholder)
 					if found {
 						log.Debug("dropping non-unique url: " + url)

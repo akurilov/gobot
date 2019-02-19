@@ -30,7 +30,7 @@ func NewGobotClient(contentLengthLimit int) *GobotClient {
 	}
 }
 
-// ContentTexts gets the content text from the specified URL. Returns error if:
+// ContentText gets the content text from the specified URL. Returns error if:
 // * failed to fetch
 // * response status is not 2xx
 // * response Content-Type header exists and not starts with "text" prefix
