@@ -5,7 +5,7 @@ import (
 	"sync/atomic"
 )
 
-// loop: get the URL from the fetchQueue, fetch the corresponding text content and try to send it to the parseQueue
+// FetchLoop get the URL from the fetchQueue, fetch the corresponding text content and try to send it to the parseQueue
 func FetchLoop(
 	log *zap.Logger, client *GobotClient, fetchCounter *uint64, fetchQueue <-chan string, parseQueue chan<- string) {
 	for url := range fetchQueue {

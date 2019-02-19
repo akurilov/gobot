@@ -27,7 +27,7 @@ var (
 	placeholder     = &object{}
 )
 
-// loop: get next text content from the parseQueue, extract links from it and try to send them to the fetchQueue
+// ParseLoop get next text content from the parseQueue, extract links from it and try to send them to the fetchQueue
 func ParseLoop(log *zap.Logger, parseQueue <-chan string, fetchQueue chan<- string) {
 	for txt := range parseQueue {
 		linkMatches := linkPattern.FindAllStringSubmatch(txt, 0x100)
