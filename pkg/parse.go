@@ -42,7 +42,7 @@ func ParseLoop(log *zap.Logger, parseQueue <-chan string, fetchQueue chan<- stri
 						select {
 						case fetchQueue <- url:
 						default:
-							log.Warn("fetch queue is full, dropping the url: " + url)
+							log.Debug("fetch queue is full, dropping the url: " + url)
 						}
 					}
 				}

@@ -14,10 +14,10 @@ func FetchLoop(
 			select {
 			case parseQueue <- txt:
 			default:
-				log.Warn("parse queue is full, dropping the content")
+				log.Debug("parse queue is full, dropping the content")
 			}
 		} else {
-			log.Warn(err.Error())
+			log.Debug(err.Error())
 		}
 		atomic.AddUint64(fetchCounter, 1)
 	}
