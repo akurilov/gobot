@@ -7,12 +7,15 @@ import (
 
 func FetchLoop(
 	log *zap.Logger, client *GobotClient, fetchCounter *uint64, fetchQueue <-chan string, parseQueue chan<- string) {
-	for {
-		url := <-fetchQueue
+	for url := range fetchQueue {
 		log.Debug("fetching: " + url)
 		txt, err := client.ContentText(url)
 		if err == nil {
-			parseQueue <- txt
+			select {
+			case parseQueue <- txt:
+			default:
+				log.Warn("parse queue is full, dropping the content")
+			}
 		} else {
 			log.Warn(err.Error())
 		}

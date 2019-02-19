@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/akurilov/gobot/pkg"
-	"github.com/hashicorp/golang-lru"
 	"go.uber.org/zap"
 	"os"
 	"sync"
@@ -41,14 +40,6 @@ func initLogger() *zap.Logger {
 	return logger
 }
 
-func initUniqueUrlCache(capacity int) *lru.Cache {
-	uniqueUrls, err := lru.New(capacity)
-	if err != nil {
-		panic(err)
-	}
-	return uniqueUrls
-}
-
 func main() {
 	defer func() {
 		err := log.Sync()
@@ -56,6 +47,8 @@ func main() {
 			panic(err)
 		}
 	}()
+	defer close(fetchQueue)
+	defer close(parseQueue)
 	args := os.Args
 	if len(args) > 1 {
 		syncGroup.Add(1)

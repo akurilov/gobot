@@ -28,8 +28,7 @@ var (
 )
 
 func ParseLoop(log *zap.Logger, parseQueue <-chan string, fetchQueue chan<- string) {
-	for {
-		txt := <-parseQueue
+	for txt := range parseQueue {
 		linkMatches := linkPattern.FindAllStringSubmatch(txt, 0x100)
 		for _, linkMatch := range linkMatches {
 			if len(linkMatch) > 1 {
@@ -40,7 +39,11 @@ func ParseLoop(log *zap.Logger, parseQueue <-chan string, fetchQueue chan<- stri
 					if found {
 						log.Debug("dropping non-unique url: " + url)
 					} else {
-						fetchQueue <- url
+						select {
+						case fetchQueue <- url:
+						default:
+							log.Warn("fetch queue is full, dropping the url: " + url)
+						}
 					}
 				}
 			}
