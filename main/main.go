@@ -80,14 +80,10 @@ func printingStats() {
 	sugar := log.Sugar()
 	for {
 		time.Sleep(statsOutputPeriod * time.Second)
+		c := atomic.LoadUint64(&fetchCount)
+		d := time.Since(startTime)
 		sugar.Infof(
-			"URL queue length: %d, parse queue length: %d, fetch mean rate: %f", len(fetchQueue), len(parseQueue),
-			meanRate())
+			"URL queue length: %d, parse queue length: %d, fetch count: %d, mean rate: %f", len(fetchQueue),
+			len(parseQueue), c, float64(c)/d.Seconds())
 	}
-}
-
-func meanRate() float64 {
-	c := atomic.LoadUint64(&fetchCount)
-	d := time.Since(startTime)
-	return float64(c) / d.Seconds()
 }
