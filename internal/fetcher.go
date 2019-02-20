@@ -2,26 +2,32 @@ package internal
 
 import (
 	"github.com/akurilov/gobot/pkg/content"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
 	"net/url"
-	"sync/atomic"
+)
+
+var (
+	fetchCounter = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Name: "gobot_fetch_count_total",
+			Help: "The total number of fetched contents ",
+		})
 )
 
 type Fetcher struct {
 	log           *zap.Logger
 	client        *GobotClient
-	fetchCounter  *uint64
 	urlInput      <-chan *url.URL
 	contentOutput chan<- *content.Content
 }
 
 func NewFetcher(
-	log *zap.Logger, client *GobotClient, fetchCounter *uint64, urlInput <-chan *url.URL,
-	contentOutput chan<- *content.Content) *Fetcher {
+	log *zap.Logger, client *GobotClient, urlInput <-chan *url.URL, contentOutput chan<- *content.Content) *Fetcher {
 	return &Fetcher{
 		log,
 		client,
-		fetchCounter,
 		urlInput,
 		contentOutput,
 	}
@@ -40,6 +46,6 @@ func (f *Fetcher) Loop() {
 		} else {
 			f.log.Debug(err.Error())
 		}
-		atomic.AddUint64(f.fetchCounter, 1)
+		fetchCounter.Inc()
 	}
 }
