@@ -4,10 +4,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/akurilov/gobot/pkg/content"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -30,24 +31,20 @@ func NewGobotClient(contentLengthLimit int) *GobotClient {
 	}
 }
 
-// ContentText gets the content text from the specified URL. Returns error if:
+// GetContent gets the content text from the specified URL. Returns error if:
 // * failed to fetch
 // * response status is not 2xx
-// * response Content-Type header exists and not starts with "text" prefix
 // * response Content-Length header contains the value which couldn't be parsed as integer
-func (client *GobotClient) ContentText(url string) (string, error) {
-	resp, err := client.Get(url)
+func (client *GobotClient) GetContent(u *url.URL) (*content.Content, error) {
+	resp, err := client.Get(u.String())
 	if err != nil {
-		return "", err
+		return content.NewDummyContent(u), err
 	}
 	statusCode := resp.StatusCode
 	if statusCode < 200 || statusCode > 299 {
-		return "", errors.New("response status code " + strconv.Itoa(statusCode))
+		return content.NewDummyContent(u), errors.New("response status code " + strconv.Itoa(statusCode))
 	}
-	contentType := resp.Header.Get("Content-Type")
-	if !strings.HasPrefix(contentType, "text") {
-		return "", errors.New("unsupported content type " + contentType)
-	}
+	mimeType := resp.Header.Get("Content-Type")
 	contentLenRaw := resp.Header.Get("Content-Length")
 	var contentLen int
 	if len(contentLenRaw) == 0 {
@@ -55,13 +52,14 @@ func (client *GobotClient) ContentText(url string) (string, error) {
 	} else {
 		contentLen, err = strconv.Atoi(contentLenRaw)
 		if err != nil {
-			return "", errors.New("failed to parse the content length header value " + contentLenRaw)
+			return content.NewDummyContent(u),
+				errors.New("failed to parse the content length header value " + contentLenRaw)
 		}
 		if client.contentLengthLimit < contentLen {
 			contentLen = client.contentLengthLimit
 		}
 	}
-	content := make([]byte, contentLen, contentLen)
+	body := make([]byte, contentLen, contentLen)
 	contentReader := resp.Body
 	defer func() {
 		err := contentReader.Close()
@@ -69,10 +67,9 @@ func (client *GobotClient) ContentText(url string) (string, error) {
 			fmt.Println(err)
 		}
 	}()
-	contentLen, err = io.ReadFull(contentReader, content)
+	contentLen, err = io.ReadFull(contentReader, body)
 	if err == io.ErrUnexpectedEOF {
 		err = nil // discard
 	}
-	txt := string(content[:contentLen])
-	return txt, err
+	return content.NewContent(mimeType, u, body), err
 }
